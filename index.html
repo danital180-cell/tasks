@@ -17,11 +17,13 @@
   .meta{font-size:12.5px;color:var(--mute);margin:4px 34px 0 0}
   .stuck{color:var(--bad);font-weight:600}
   .ctl{display:flex;gap:6px;margin:8px 34px 0 0;flex-wrap:wrap}
-  select,textarea,input[type=text]{font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;color:var(--ink)}
+  select,textarea,input[type=text],input[type=date],input[type=time]{font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;color:var(--ink)}
   textarea{width:100%;min-height:36px;margin:6px 0 0}
   .btn{display:inline-block;text-decoration:none;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:5px 10px;color:var(--ink);background:#fff}
   .saved{font-size:12px;color:var(--ok);margin-inline-start:6px}
-  .add{display:flex;gap:6px;margin:12px 0} .add input{flex:1}
+  .add{display:flex;gap:6px;margin:12px 0;flex-wrap:wrap} .add #newTitle{flex:1 1 100%}
+  .when{display:flex;gap:6px;align-items:center;margin:8px 34px 0 0;font-size:13px;color:var(--mute)}
+  .when input{padding:5px 6px}
   .closedbox{margin:22px 0 8px;border-top:1px dashed var(--line);padding-top:10px}
   .closedbox summary{cursor:pointer;color:var(--mute);font-size:14px;font-weight:600;padding:6px 0;list-style:none}
   .closedbox summary::-webkit-details-marker{display:none}
@@ -29,11 +31,11 @@
   .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#1f2328;color:#fff;border-radius:10px;padding:10px 14px;font-size:14px;display:none;gap:14px;align-items:center;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:9;max-width:calc(100% - 32px)}
   .toast.show{display:flex}
   .toast button{background:none;border:0;color:#8fb0ff;font:inherit;font-weight:700;cursor:pointer;padding:0}
-  @media (prefers-color-scheme:dark){:root{--bg:#16181b;--card:#1f2226;--ink:#e8e6e1;--mute:#9aa0a6;--line:#30343a}select,textarea,input[type=text],.btn{background:#26292e}}
+  @media (prefers-color-scheme:dark){:root{--bg:#16181b;--card:#1f2226;--ink:#e8e6e1;--mute:#9aa0a6;--line:#30343a}select,textarea,input[type=text],input[type=date],input[type=time],.btn{background:#26292e;color-scheme:dark}}
 </style></head><body>
 <header><h1>סגירת שבוע – משימות</h1><div class="stats" id="stats">טוען…</div></header>
 <main>
-  <div class="add"><input type="text" id="newTitle" placeholder="משימה חדשה…"><select id="newArea"></select><button class="btn" onclick="addNew()">הוסף</button></div>
+  <div class="add"><input type="text" id="newTitle" placeholder="משימה חדשה…"><select id="newArea"></select><input type="date" id="newDate" title="תאריך (לא חובה)"><input type="time" id="newTime" title="שעה (לא חובה)"><button class="btn" onclick="addNew()">הוסף</button></div>
   <div id="list"></div>
 </main>
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">ביטול</button></div>
@@ -54,7 +56,7 @@ function render(){
   document.getElementById('newArea').innerHTML=AREAS.map(a=>'<option>'+esc(a)+'</option>').join('');
   // סדר: פתוחות לפני סגורות, ואז לפי תאריך יעד (בלי תאריך – בסוף), ואז לפי מועד יצירה
   const closed=t=>t.status==='done'||t.status==='cancelled'?1:0;
-  const dkey=t=>String(t.due||'').slice(0,10)||'9999';
+  const dkey=t=>(String(t.due||'').slice(0,10)||'9999')+' '+(t.time||'99:99');
   DATA.sort((a,b)=>closed(a)-closed(b)||dkey(a).localeCompare(dkey(b))||String(a.created||'').localeCompare(String(b.created||'')));
   const isClosed=t=>t.status==='done'||t.status==='cancelled';
   const active=DATA.filter(t=>!isClosed(t)), done=DATA.filter(isClosed);
@@ -72,7 +74,7 @@ function card(t){
   const m=[];
   if(t.owner)m.push('באחריות: '+esc(t.owner));
   if(t.contact)m.push('👤 '+esc(t.contact));
-  if(t.due)m.push('עד: '+fmt(t.due));
+  if(t.due)m.push('עד: '+fmt(t.due)+(t.time?' · '+esc(t.time):''));
   if(t.source&&t.source!=='daniel'&&t.source!=='page')m.push('נוסף ע"י הבוט');
   if(t.weeks>=2&&t.status!=='done')m.push('<span class="stuck">נדחה '+t.weeks+' שבועות</span>');
   let links='';
@@ -80,6 +82,7 @@ function card(t){
   return '<div class="t '+(t.status==='done'||t.status==='cancelled'?t.status:'')+'" id="t_'+t.id+'"><div class="row"><input type="checkbox" '+(t.status==='done'?'checked':'')+' onchange="setSt(\''+t.id+'\',this.checked?\'done\':\'open\')"><div class="ttl" contenteditable="true" title="לחיצה לעריכת השם" onblur="setTitle(\''+t.id+'\',this.innerText)">'+esc(t.title)+'</div></div>'+
    (m.length?'<div class="meta">'+m.join(' · ')+'</div>':'')+
    '<div class="ctl"><select onchange="setSt(\''+t.id+'\',this.value)">'+opts+'</select>'+'<select onchange="setArea(\''+t.id+'\',this.value)">'+AREAS.map(a=>'<option'+(a===(t.area||'אחר')?' selected':'')+'>'+esc(a)+'</option>').join('')+'</select>'+links+'<span class="saved" id="s_'+t.id+'"></span></div>'+
+   '<div class="when">📅 <input type="date" id="d_'+t.id+'" value="'+esc(String(t.due||'').slice(0,10))+'" onchange="setWhen(\''+t.id+'\')"> 🕒 <input type="time" id="h_'+t.id+'" value="'+esc(t.time||'')+'" onchange="setWhen(\''+t.id+'\')"></div>'+
    '<div class="ctl" style="display:block"><textarea placeholder="הערה…" onchange="setNote(\''+t.id+'\',this.value)">'+esc(t.note)+'</textarea></div></div>';
 }
 function save(id,st,note,area,title){const s=document.getElementById('s_'+id);if(s)s.textContent='שומר…';call({a:'update',id:id,status:st,note:note||'',area:area||'',title:title||''}).then(()=>{const s2=document.getElementById('s_'+id);if(s2)s2.textContent='✓ נשמר'}).catch(e=>{const s2=document.getElementById('s_'+id);if(s2)s2.textContent='שגיאה'})}
@@ -91,6 +94,9 @@ function toast(msg,undo){const el=document.getElementById('toast');document.getE
 function setTitle(id,v){const t=DATA.find(x=>x.id===id);v=String(v||'').replace(/\s+/g,' ').trim();if(!v||v===t.title)return;t.title=v;save(id,t.status,t.note,'',v)}
 function setArea(id,a){const t=DATA.find(x=>x.id===id);t.area=a;save(id,t.status,t.note,a);render()}
 function setNote(id,v){const t=DATA.find(x=>x.id===id);t.note=v;save(id,t.status,v)}
-function addNew(){const i=document.getElementById('newTitle');const v=i.value.trim();if(!v)return;const a=document.getElementById('newArea').value;call({a:'add',title:v,area:a}).then(()=>{i.value='';load()}).catch(e=>document.getElementById('stats').textContent='שגיאה: '+e.message)}
+function setWhen(id){const t=DATA.find(x=>x.id===id);const d=document.getElementById('d_'+id).value,h=document.getElementById('h_'+id).value;if(!d&&!h)return;
+  const s=document.getElementById('s_'+id);if(s)s.textContent='מעדכן ביומן…';
+  call({a:'when',id:id,date:d,time:h}).then(r=>{t.due=d||new Date().toLocaleDateString('sv-SE');t.time=h;if(r&&r.ref)t.ref=r.ref;render();const s2=document.getElementById('s_'+id);if(s2)s2.textContent=r&&r.error?'נשמר, היומן לא עודכן':'✓ עודכן ביומן'}).catch(e=>{const s2=document.getElementById('s_'+id);if(s2)s2.textContent='שגיאה'})}
+function addNew(){const i=document.getElementById('newTitle');const v=i.value.trim();if(!v)return;const a=document.getElementById('newArea').value;const nd=document.getElementById('newDate'),nh=document.getElementById('newTime');call({a:'add',title:v,area:a,date:nd.value,time:nh.value}).then(()=>{i.value='';nd.value='';nh.value='';load()}).catch(e=>document.getElementById('stats').textContent='שגיאה: '+e.message)}
 load();
 </script></body></html>
