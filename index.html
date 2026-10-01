@@ -22,10 +22,47 @@
   .btn{display:inline-block;text-decoration:none;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:5px 10px;color:var(--ink);background:#fff}
   .saved{font-size:12px;color:var(--ok);margin-inline-start:6px}
   .add{display:flex;gap:6px;margin:12px 0} .add input{flex:1}
+  .help{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:12px 0;font-size:14px}
+  .help summary{cursor:pointer;padding:10px 12px;font-weight:600;color:var(--acc);list-style:none}
+  .help summary::-webkit-details-marker{display:none}
+  .help[open] summary{border-bottom:1px solid var(--line)}
+  .help .hb{padding:6px 14px 12px}
+  .help h3{font-size:14px;margin:12px 0 4px}
+  .help ul{margin:0;padding-inline-start:18px} .help li{margin:3px 0}
+  .help code{background:var(--bg);border-radius:6px;padding:1px 6px;font-family:inherit}
   @media (prefers-color-scheme:dark){:root{--bg:#16181b;--card:#1f2226;--ink:#e8e6e1;--mute:#9aa0a6;--line:#30343a}select,textarea,input[type=text],.btn{background:#26292e}}
 </style></head><body>
 <header><h1>סגירת שבוע – משימות</h1><div class="stats" id="stats">טוען…</div></header>
 <main>
+  <details class="help" id="help">
+    <summary>❓ איך עובדים – לחץ להסבר</summary>
+    <div class="hb">
+      <h3>📋 בדף הזה</h3>
+      <ul>
+        <li><b>✓</b> בצ'קבוקס = בוצע. ביומן יופיע ✅ והתזכורת לא תישלח.</li>
+        <li><b>סטטוס</b>: פתוח / בתהליך / בוצע / נדחה / בוטל (בוטל = ❌ ביומן).</li>
+        <li><b>קטגוריה</b>: הרשימה השנייה – מעבירה את המשימה לתחום אחר.</li>
+        <li><b>שם המשימה</b>: לוחצים עליו, מתקנים, ולוחצים מחוץ לו – נשמר גם ביומן.</li>
+        <li><b>הערה</b>: כותבים בתיבה – נשמר אוטומטית.</li>
+        <li><b>📞 / 💬</b>: חיוג או וואטסאפ לאיש הקשר של המשימה.</li>
+        <li>כל שינוי נשמר מיד ומגיע לבוט, לגיליון וליומן.</li>
+      </ul>
+      <h3>💬 בוואטסאפ לבוט</h3>
+      <ul>
+        <li><code>משימה לפסגות העמק: לשלוח מחירון למשה</code></li>
+        <li><code>תזכיר לי מחר ב-11 לחזור לאבי</code></li>
+        <li><code>פגישה ביום חמישי ב-17:00 באתר בעכו</code></li>
+        <li><code>סיימתי עם המחירון</code> · <code>מה המשימות שלי?</code></li>
+        <li>לציין תחום (עכו / עפולה / טאבונוצי / אישי) = קטגוריה נכונה.</li>
+      </ul>
+      <h3>🗓 הקצב</h3>
+      <ul>
+        <li><b>כל בוקר 7:30</b> – סיכום יומן, מיילים ומשימות.</li>
+        <li><b>שישי 15:00</b> – סגירת שבוע עם קישור לכאן.</li>
+        <li><b>ראשון</b> – מה שלא נסגר עובר לשבוע הבא ("נדחה N שבועות").</li>
+      </ul>
+    </div>
+  </details>
   <div class="add"><input type="text" id="newTitle" placeholder="משימה חדשה…"><select id="newArea"></select><button class="btn" onclick="addNew()">הוסף</button></div>
   <div id="list"></div>
 </main>
