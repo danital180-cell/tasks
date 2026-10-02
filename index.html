@@ -16,6 +16,9 @@
   .ttl:focus{background:var(--bg);box-shadow:0 0 0 2px var(--acc)}
   .meta{font-size:12.5px;color:var(--mute);margin:4px 34px 0 0}
   .stuck{color:var(--bad);font-weight:600}
+  .t.late{border-color:var(--bad);border-inline-start:4px solid var(--bad)}
+  .t.late .ttl{color:var(--bad)}
+  .late-tag{color:var(--bad);font-weight:700}
   .ctl{display:flex;gap:6px;margin:8px 34px 0 0;flex-wrap:wrap}
   select,textarea,input[type=text],input[type=date],input[type=time]{font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;color:var(--ink)}
   textarea{width:100%;min-height:36px;margin:6px 0 0}
@@ -69,17 +72,23 @@ function render(){
   if(done.length)h+='<details class="closedbox" id="closedbox"'+(CLOSED_OPEN?' open':'')+' ontoggle="CLOSED_OPEN=this.open"><summary>✅ בוצעו / בוטלו השבוע ('+done.length+') – להצגה ושחזור</summary>'+done.map(card).join('')+'</details>';
   document.getElementById('list').innerHTML=h;
 }
+// באיחור: משימה פתוחה שהתאריך (והשעה, אם יש) כבר עברו
+function isLate(t){if(!t.due||t.status==='done'||t.status==='cancelled')return false;const d=String(t.due).slice(0,10);
+  const now=new Date(),today=now.toLocaleDateString('sv-SE');if(d<today)return true;if(d>today)return false;
+  if(!t.time)return false;return t.time<now.toTimeString().slice(0,5)}
 function card(t){
   const opts=Object.keys(ST).map(s=>'<option value="'+s+'"'+(s===t.status?' selected':'')+'>'+ST[s]+'</option>').join('');
   const m=[];
   if(t.owner)m.push('באחריות: '+esc(t.owner));
   if(t.contact)m.push('👤 '+esc(t.contact));
+  const late=isLate(t);
+  if(late)m.push('<span class="late-tag">⚠ באיחור</span>');
   if(t.due)m.push('עד: '+fmt(t.due)+(t.time?' · '+esc(t.time):''));
   if(t.source&&t.source!=='daniel'&&t.source!=='page')m.push('נוסף ע"י הבוט');
   if(t.weeks>=2&&t.status!=='done')m.push('<span class="stuck">נדחה '+t.weeks+' שבועות</span>');
   let links='';
   if(t.phone){const d=tel(t.phone);links+='<a class="btn" href="tel:+'+d+'">📞</a><a class="btn" target="_blank" href="https://wa.me/'+d+(t.owner?'?text='+encodeURIComponent('היי, רק מזכיר: '+t.title):'')+'">💬</a>'}
-  return '<div class="t '+(t.status==='done'||t.status==='cancelled'?t.status:'')+'" id="t_'+t.id+'"><div class="row"><input type="checkbox" '+(t.status==='done'?'checked':'')+' onchange="setSt(\''+t.id+'\',this.checked?\'done\':\'open\')"><div class="ttl" contenteditable="true" title="לחיצה לעריכת השם" onblur="setTitle(\''+t.id+'\',this.innerText)">'+esc(t.title)+'</div></div>'+
+  return '<div class="t '+(t.status==='done'||t.status==='cancelled'?t.status:'')+(late?' late':'')+'" id="t_'+t.id+'"><div class="row"><input type="checkbox" '+(t.status==='done'?'checked':'')+' onchange="setSt(\''+t.id+'\',this.checked?\'done\':\'open\')"><div class="ttl" contenteditable="true" title="לחיצה לעריכת השם" onblur="setTitle(\''+t.id+'\',this.innerText)">'+esc(t.title)+'</div></div>'+
    (m.length?'<div class="meta">'+m.join(' · ')+'</div>':'')+
    '<div class="ctl"><select onchange="setSt(\''+t.id+'\',this.value)">'+opts+'</select>'+'<select onchange="setArea(\''+t.id+'\',this.value)">'+AREAS.map(a=>'<option'+(a===(t.area||'אחר')?' selected':'')+'>'+esc(a)+'</option>').join('')+'</select>'+links+'<span class="saved" id="s_'+t.id+'"></span></div>'+
    '<div class="when">📅 <input type="date" id="d_'+t.id+'" value="'+esc(String(t.due||'').slice(0,10))+'" onchange="setWhen(\''+t.id+'\')"> 🕒 <input type="time" id="h_'+t.id+'" value="'+esc(t.time||'')+'" onchange="setWhen(\''+t.id+'\')"></div>'+
@@ -99,4 +108,6 @@ function setWhen(id){const t=DATA.find(x=>x.id===id);const d=document.getElement
   call({a:'when',id:id,date:d,time:h}).then(r=>{t.due=d||new Date().toLocaleDateString('sv-SE');t.time=h;if(r&&r.ref)t.ref=r.ref;render();const s2=document.getElementById('s_'+id);if(s2)s2.textContent=r&&r.error?'נשמר, היומן לא עודכן':'✓ עודכן ביומן'}).catch(e=>{const s2=document.getElementById('s_'+id);if(s2)s2.textContent='שגיאה'})}
 function addNew(){const i=document.getElementById('newTitle');const v=i.value.trim();if(!v)return;const a=document.getElementById('newArea').value;const nd=document.getElementById('newDate'),nh=document.getElementById('newTime');call({a:'add',title:v,area:a,date:nd.value,time:nh.value}).then(()=>{i.value='';nd.value='';nh.value='';load()}).catch(e=>document.getElementById('stats').textContent='שגיאה: '+e.message)}
 load();
+// כל דקה: בדיקה מחדש של איחורים (בלי לגעת בשדה שאתה עורך כרגע)
+setInterval(()=>{const a=document.activeElement;if(DATA.length&&!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a&&a.isContentEditable))render()},60000);
 </script></body></html>
