@@ -55,7 +55,12 @@ function tel(p){let d=String(p||'').replace(/\D/g,'');if(d.startsWith('0'))d='97
 function load(){if(!KEY){document.getElementById('stats').textContent='חסר מפתח – פתח את הקישור מהבוט פעם אחת.';return}call({a:'list'}).then(r=>{DATA=r.items;AREAS=r.areas;render()}).catch(e=>{document.getElementById('stats').textContent='שגיאה: '+e.message})}
 function render(){
   const c={done:0,progress:0,open:0,postponed:0,cancelled:0};DATA.forEach(t=>c[t.status]=(c[t.status]||0)+1);
-  document.getElementById('stats').innerHTML=['<span class="pill">סה"כ '+DATA.length+'</span>','<span class="pill">✅ '+c.done+' בוצעו</span>','<span class="pill">🔄 '+c.progress+' בתהליך</span>','<span class="pill">⬜ '+c.open+' פתוחות</span>','<span class="pill">⏭ '+c.postponed+' נדחו</span>'].join('');
+  const nLate=DATA.filter(isLate).length;
+  const pills=['<span class="pill">סה"כ '+DATA.length+'</span>','<span class="pill">⬜ '+c.open+' פתוחות</span>','<span class="pill">🔄 '+c.progress+' בתהליך</span>'];
+  if(c.postponed)pills.push('<span class="pill">⏭ '+c.postponed+' נדחו</span>');
+  if(nLate)pills.push('<span class="pill late-tag">⚠ '+nLate+' באיחור</span>');
+  pills.push('<span class="pill">✅ '+c.done+' בוצעו</span>','<span class="pill">❌ '+(c.cancelled||0)+' בוטלו</span>');
+  document.getElementById('stats').innerHTML=pills.join('');
   document.getElementById('newArea').innerHTML=AREAS.map(a=>'<option>'+esc(a)+'</option>').join('');
   // סדר: פתוחות לפני סגורות, ואז לפי תאריך יעד (בלי תאריך – בסוף), ואז לפי מועד יצירה
   const closed=t=>t.status==='done'||t.status==='cancelled'?1:0;
