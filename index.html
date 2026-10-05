@@ -115,7 +115,7 @@ function save(id,st,note,area,title){const s=document.getElementById('s_'+id);if
 function setSt(id,st,noToast){const t=DATA.find(x=>x.id===id);const prev=t.status;if(prev===st)return;t.status=st;save(id,st,t.note);render();
   if(!noToast&&(st==='done'||st==='cancelled'))toast((st==='done'?'✅ סומן כבוצע: ':'❌ בוטל: ')+t.title,()=>setSt(id,prev,true));}
 function toast(msg,undo){const el=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg.length>40?msg.slice(0,40)+'…':msg;
-  const b=document.getElementById('toastUndo');b.onclick=()=>{el.classList.remove('show');clearTimeout(toastTimer);undo()};
+  const b=document.getElementById('toastUndo');b.textContent='ביטול';b.onclick=()=>{el.classList.remove('show');clearTimeout(toastTimer);undo()};
   el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),6000)}
 function setTitle(id,v){const t=DATA.find(x=>x.id===id);v=String(v||'').replace(/\s+/g,' ').trim();if(!v||v===t.title)return;t.title=v;save(id,t.status,t.note,'',v)}
 function setArea(id,a){const t=DATA.find(x=>x.id===id);t.area=a;save(id,t.status,t.note,a);render()}
@@ -123,7 +123,13 @@ function setNote(id,v){const t=DATA.find(x=>x.id===id);t.note=v;save(id,t.status
 function setWhen(id){const t=DATA.find(x=>x.id===id);const d=document.getElementById('d_'+id).value,h=document.getElementById('h_'+id).value;if(!d&&!h)return;
   const s=document.getElementById('s_'+id);if(s)s.textContent='מעדכן ביומן…';
   call({a:'when',id:id,date:d,time:h}).then(r=>{t.due=d||new Date().toLocaleDateString('sv-SE');t.time=h;if(r&&r.ref)t.ref=r.ref;render();const s2=document.getElementById('s_'+id);if(s2)s2.textContent=r&&r.error?'נשמר, היומן לא עודכן':'✓ עודכן ביומן'}).catch(e=>{const s2=document.getElementById('s_'+id);if(s2)s2.textContent='שגיאה'})}
-function addNew(){const i=document.getElementById('newTitle');const v=i.value.trim();if(!v)return;const a=document.getElementById('newArea').value;const nd=document.getElementById('newDate'),nh=document.getElementById('newTime');call({a:'add',title:v,area:a,date:nd.value,time:nh.value}).then(()=>{i.value='';nd.value='';nh.value='';load()}).catch(e=>document.getElementById('stats').textContent='שגיאה: '+e.message)}
+let ADDING=false;
+function normT(x){return String(x||'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim()}
+function notify(msg){const el=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg;const b=document.getElementById('toastUndo');b.textContent='סגור';b.onclick=()=>{el.classList.remove('show');clearTimeout(toastTimer)};el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),6000)}
+function addNew(){if(ADDING)return;const i=document.getElementById('newTitle');const v=i.value.trim();if(!v)return;
+  const dup=DATA.find(t=>t.status!=='done'&&t.status!=='cancelled'&&normT(t.title)===normT(v));
+  if(dup){notify('⚠️ כבר קיימת משימה פתוחה בשם הזה – לא נוספה');return}
+  ADDING=true;const a=document.getElementById('newArea').value;const nd=document.getElementById('newDate'),nh=document.getElementById('newTime');call({a:'add',title:v,area:a,date:nd.value,time:nh.value}).then(()=>{i.value='';nd.value='';nh.value='';ADDING=false;load()}).catch(e=>{ADDING=false;document.getElementById('stats').textContent='שגיאה: '+e.message})}
 document.getElementById('newTitle').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addNew()}});
 load();
 // כל דקה: בדיקה מחדש של איחורים (בלי לגעת בשדה שאתה עורך כרגע)
