@@ -39,7 +39,7 @@
 </style></head><body>
 <header><h1>סגירת שבוע – משימות</h1><div class="stats" id="stats">טוען…</div></header>
 <main>
-  <div class="add"><input type="text" id="newTitle" placeholder="משימה חדשה…"><select id="newArea"></select><input type="date" id="newDate" title="תאריך (לא חובה)"><input type="time" id="newTime" title="שעה (לא חובה)"><button class="btn" onclick="addNew()">הוסף</button></div>
+  <div class="add"><input type="text" id="newTitle" placeholder="משימה חדשה…"><select id="newArea"></select><input type="date" id="newDate" title="תאריך (לא חובה)"><input type="time" id="newTime" title="שעה (לא חובה)"><button class="btn" onclick="addNew()">+ הוסף משימה</button></div>
   <div class="tools"><input type="text" id="q" placeholder="🔍 חיפוש משימה…" oninput="QUERY=this.value.trim();render()"><button class="btn" id="viewBtn" onclick="toggleView()"></button></div>
   <div id="list"></div>
 </main>
@@ -124,6 +124,7 @@ function setWhen(id){const t=DATA.find(x=>x.id===id);const d=document.getElement
   const s=document.getElementById('s_'+id);if(s)s.textContent='מעדכן ביומן…';
   call({a:'when',id:id,date:d,time:h}).then(r=>{t.due=d||new Date().toLocaleDateString('sv-SE');t.time=h;if(r&&r.ref)t.ref=r.ref;render();const s2=document.getElementById('s_'+id);if(s2)s2.textContent=r&&r.error?'נשמר, היומן לא עודכן':'✓ עודכן ביומן'}).catch(e=>{const s2=document.getElementById('s_'+id);if(s2)s2.textContent='שגיאה'})}
 function addNew(){const i=document.getElementById('newTitle');const v=i.value.trim();if(!v)return;const a=document.getElementById('newArea').value;const nd=document.getElementById('newDate'),nh=document.getElementById('newTime');call({a:'add',title:v,area:a,date:nd.value,time:nh.value}).then(()=>{i.value='';nd.value='';nh.value='';load()}).catch(e=>document.getElementById('stats').textContent='שגיאה: '+e.message)}
+document.getElementById('newTitle').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addNew()}});
 load();
 // כל דקה: בדיקה מחדש של איחורים (בלי לגעת בשדה שאתה עורך כרגע)
 setInterval(()=>{const a=document.activeElement;if(DATA.length&&!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a&&a.isContentEditable))render()},60000);
