@@ -131,7 +131,7 @@ function render(){
   let h='';
   if(VIEW==='day'){
     const groups={};active.forEach(t=>{const d=String(t.due||'').slice(0,10);const k=d||'none';(groups[k]=groups[k]||[]).push(t)});
-    Object.keys(groups).sort((a,b)=>(a==='none'?'9999':a).localeCompare(b==='none'?'9999':b)).forEach(k=>{h+='<h2>'+esc(dayLabel(k==='none'?'':k))+'</h2>'+groups[k].map(card).join('')});
+    const todayS=new Date().toLocaleDateString('sv-SE');const rank=k=>k==='none'?1:(k<todayS?2:0);Object.keys(groups).sort((a,b)=>rank(a)-rank(b)||(rank(a)===2?b.localeCompare(a):a.localeCompare(b))).forEach(k=>{h+='<h2>'+esc(dayLabel(k==='none'?'':k))+'</h2>'+groups[k].map(card).join('')});
   }else{
     AREAS.forEach(a=>{const g=mine.filter(t=>(t.area||'אחר')===a);if(g.length)h+='<h2>'+esc(a)+'</h2>'+g.map(card).join('')});
     if(waiting.length)h+='<h2>⏳ מחכה לאחרים</h2>'+waiting.map(card).join('');
