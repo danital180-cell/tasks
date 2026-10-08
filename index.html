@@ -8,8 +8,21 @@
   .syncmsg{font-size:12px;font-weight:400;color:var(--mute);margin-inline-start:6px}
   .pill{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:2px 10px}
   main{padding:8px 16px 90px;max-width:720px;margin:0 auto}
-  h2{font-size:15px;margin:18px 0 6px;color:var(--mute)}
-  .t{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0}
+  h2{font-size:15px;color:var(--mute)}
+  .t{--ac:#6b7075;background:var(--card);border:1px solid var(--line);border-inline-start:4px solid var(--ac);border-radius:12px;padding:9px 12px;margin:7px 0}
+  .ctm{flex:none;min-width:46px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--acc);font-size:15px}
+  .ctm.no{color:var(--line);font-weight:400}
+  .chev{flex:none;border:0;background:none;color:var(--mute);font-size:18px;line-height:1;padding:4px 6px;cursor:pointer;transition:transform .15s}
+  .t.open .chev{transform:rotate(180deg)}
+  .cs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:5px 0 0;margin-inline-start:34px;font-size:12.5px;color:var(--mute);cursor:pointer}
+  .chip{display:inline-block;border-radius:99px;padding:1px 9px;font-size:12px;font-weight:600;color:var(--ink);background:color-mix(in srgb,var(--ac) 18%,transparent)}
+  .cs .lk{margin-inline-start:auto;display:flex;gap:6px}
+  .cs .btn{padding:2px 9px}
+  .np{margin:3px 0 0;margin-inline-start:34px;font-size:12.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .more{display:none;margin-top:4px}
+  .t.open .more{display:block}.t.open .np{display:none}
+  .pill[data-f]{cursor:pointer}.pill.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  h2{position:sticky;top:var(--hh,96px);z-index:1;background:var(--bg);padding:6px 0;margin:10px 0 2px}
   .t.done .ttl{text-decoration:line-through;color:var(--mute)}
   .row{display:flex;align-items:center;gap:10px}
   .row input[type=checkbox]{width:24px;height:24px;flex:none;accent-color:var(--ok)}
@@ -17,7 +30,7 @@
   .ttl:focus{background:var(--bg);box-shadow:0 0 0 2px var(--acc)}
   .meta{font-size:12.5px;color:var(--mute);margin:4px 34px 0 0}
   .stuck{color:var(--bad);font-weight:600}
-  .t.late{border-color:var(--bad);border-inline-start:4px solid var(--bad)}
+  .t.late{border-color:var(--bad);border-inline-start:4px solid var(--bad)}.t.late .ctm{color:var(--bad)}
   .t.late .ttl{color:var(--bad)}
   .late-tag{color:var(--bad);font-weight:700}
   .ctl{display:flex;gap:6px;margin:8px 34px 0 0;flex-wrap:wrap}
@@ -37,7 +50,7 @@
     header,main,.toast{display:none!important}
     #printArea{display:block!important;direction:rtl;padding:0}
     #printArea h1{font-size:18pt;margin:0 0 4pt}#printArea .sub{color:#444;font-size:11pt;margin-bottom:10pt}
-    #printArea h2{font-size:13pt;margin:12pt 0 4pt;padding-bottom:2pt;border-bottom:1px solid #000;color:#000}
+    #printArea h2{position:static;background:none;font-size:13pt;margin:12pt 0 4pt;padding-bottom:2pt;border-bottom:1px solid #000;color:#000}
     #printArea .pi{display:flex;gap:8pt;padding:4pt 0;border-bottom:1px dotted #bbb;page-break-inside:avoid}
     #printArea .bx{flex:none;width:11pt;height:11pt;border:1.5px solid #000;margin-top:3pt}
     #printArea .bx.dn{background:#000}
@@ -71,7 +84,7 @@ function call(params,tries){tries=tries==null?(params&&params.a==='list'?3:1):tr
   return fetch(API+'?'+q.toString()).then(r=>r.json()).then(j=>{if(j&&j.error)throw new Error(j.error);return j})
     .catch(e=>{if(tries>1&&!/unauthor|key|מפתח/i.test(e.message))return new Promise(r=>setTimeout(r,700)).then(()=>call(params,tries-1));throw e})}
 const ST = {open:'פתוח',progress:'בתהליך',done:'בוצע',postponed:'נדחה',cancelled:'בוטל'};
-let DATA = [], AREAS = [], CLOSED_OPEN = false, toastTimer = null, QUERY = '', VIEW = 'day';
+let FILTER = '', EXP = {}, DATA = [], AREAS = [], CLOSED_OPEN = false, toastTimer = null, QUERY = '', VIEW = 'day';
 try{VIEW=localStorage.getItem('tasksView')||'day'}catch(e){}
 function toggleView(){VIEW=VIEW==='day'?'area':'day';try{localStorage.setItem('tasksView',VIEW)}catch(e){}render()}
 function hit(t){if(!QUERY)return true;return [t.title,t.contact,t.owner,t.area,t.note].join(' ').toLowerCase().indexOf(QUERY.toLowerCase())>=0}
@@ -113,10 +126,11 @@ function load(){if(!KEY){document.getElementById('stats').textContent='חסר מ
 function render(){
   const c={done:0,progress:0,open:0,postponed:0,cancelled:0};DATA.forEach(t=>c[t.status]=(c[t.status]||0)+1);
   const nLate=DATA.filter(isLate).length;
-  const pills=['<span class="pill">סה"כ '+DATA.length+'</span>','<span class="pill">⬜ '+c.open+' פתוחות</span>','<span class="pill">🔄 '+c.progress+' בתהליך</span>'];
-  if(c.postponed)pills.push('<span class="pill">⏭ '+c.postponed+' נדחו</span>');
-  if(nLate)pills.push('<span class="pill late-tag">⚠ '+nLate+' באיחור</span>');
-  pills.push('<span class="pill">✅ '+c.done+' בוצעו</span>','<span class="pill">❌ '+(c.cancelled||0)+' בוטלו</span>');
+  const pl=(f,txt,extra)=>'<span class="pill'+(extra?' '+extra:'')+(f&&FILTER===f?' on':'')+'" data-f="'+f+'" onclick="setFilter(\''+f+'\')">'+txt+'</span>';
+  const pills=[pl('','סה"כ '+DATA.length),pl('open','⬜ '+c.open+' פתוחות'),pl('progress','🔄 '+c.progress+' בתהליך')];
+  if(c.postponed)pills.push(pl('postponed','⏭ '+c.postponed+' נדחו'));
+  if(nLate)pills.push(pl('late','⚠ '+nLate+' באיחור','late-tag'));
+  pills.push(pl('done','✅ '+c.done+' בוצעו'),pl('cancelled','❌ '+(c.cancelled||0)+' בוטלו'));
   document.getElementById('stats').innerHTML=pills.join('');
   document.getElementById('newArea').innerHTML=AREAS.map(a=>'<option>'+esc(a)+'</option>').join('');
   // סדר: פתוחות לפני סגורות, ואז לפי תאריך יעד (בלי תאריך – בסוף), ואז לפי מועד יצירה
@@ -124,7 +138,11 @@ function render(){
   const dkey=t=>(String(t.due||'').slice(0,10)||'9999')+' '+(t.time||'99:99');
   DATA.sort((a,b)=>closed(a)-closed(b)||dkey(a).localeCompare(dkey(b))||String(a.created||'').localeCompare(String(b.created||'')));
   const isClosed=t=>t.status==='done'||t.status==='cancelled';
-  const active=DATA.filter(t=>!isClosed(t)&&hit(t)), done=DATA.filter(t=>isClosed(t)&&hit(t));
+  const CF=FILTER==='done'||FILTER==='cancelled';
+  let active=DATA.filter(t=>!isClosed(t)&&hit(t)), done=DATA.filter(t=>isClosed(t)&&hit(t));
+  if(FILTER==='late')active=active.filter(isLate);
+  else if(FILTER==='open'||FILTER==='progress'||FILTER==='postponed')active=active.filter(t=>t.status===FILTER);
+  else if(CF){active=[];done=done.filter(t=>t.status===FILTER);CLOSED_OPEN=true}
   document.getElementById('viewBtn').textContent=VIEW==='day'?'📅 לפי יום':'🗂 לפי תחום';
   const waiting=active.filter(t=>t.owner);
   const mine=active.filter(t=>!t.owner);
@@ -136,30 +154,44 @@ function render(){
     AREAS.forEach(a=>{const g=mine.filter(t=>(t.area||'אחר')===a);if(g.length)h+='<h2>'+esc(a)+'</h2>'+g.map(card).join('')});
     if(waiting.length)h+='<h2>⏳ מחכה לאחרים</h2>'+waiting.map(card).join('');
   }
-  if(!h)h=QUERY?'<p>לא נמצאו משימות עבור "'+esc(QUERY)+'"</p>':'<p>אין משימות פתוחות 🙂</p>';
+  if(!h&&!(CF&&done.length))h=QUERY?'<p>לא נמצאו משימות עבור "'+esc(QUERY)+'"</p>':'<p>אין משימות פתוחות 🙂</p>';
   if(done.length)h+='<details class="closedbox" id="closedbox"'+(CLOSED_OPEN?' open':'')+' ontoggle="CLOSED_OPEN=this.open"><summary>✅ בוצעו / בוטלו השבוע ('+done.length+') – להצגה ושחזור</summary>'+done.map(card).join('')+'</details>';
   document.getElementById('list').innerHTML=h;
   document.querySelectorAll('#list textarea').forEach(grow);
+  fixHH();
 }
+function setFilter(f){FILTER=FILTER===f?'':f;render()}
+function fixHH(){const h=document.querySelector('header');if(h)document.documentElement.style.setProperty('--hh',(h.offsetHeight-1)+'px')}
+window.addEventListener('resize',fixHH);
 // באיחור: משימה פתוחה שהתאריך (והשעה, אם יש) כבר עברו
 function isLate(t){if(!t.due||t.status==='done'||t.status==='cancelled')return false;const d=String(t.due).slice(0,10);
   const now=new Date(),today=now.toLocaleDateString('sv-SE');if(d<today)return true;if(d>today)return false;
   if(!t.time)return false;return t.time<now.toTimeString().slice(0,5)}
+const AC={'הרצל בוטיק':'#2f5bd3','פסגות העמק':'#1a7f4b','סכנין':'#d9480f','טאבונוצי':'#c28a00','RETAIN':'#7c3aed','אישי':'#d6336c','אחר':'#8a8f94'};
+function areaColor(a){a=a||'אחר';if(AC[a])return AC[a];let h=0;for(const ch of a)h=(h*31+ch.charCodeAt(0))%360;return 'hsl('+h+',55%,42%)'}
+function tog(id){const el=document.getElementById('t_'+id);if(!el)return;el.classList.toggle('open');EXP[id]=el.classList.contains('open');if(EXP[id]){const ta=el.querySelector('textarea');if(ta)grow(ta)}}
 function card(t){
   const opts=Object.keys(ST).map(s=>'<option value="'+s+'"'+(s===t.status?' selected':'')+'>'+ST[s]+'</option>').join('');
   const m=[];
-  if(t.owner)m.push('באחריות: '+esc(t.owner));
+  if(t.owner)m.push('⏳ '+esc(t.owner));
   if(t.contact)m.push('👤 '+esc(t.contact));
   const late=isLate(t);
   if(late)m.push('<span class="late-tag">⚠ באיחור</span>');
   if(t.weeks>=2&&t.status!=='done')m.push('<span class="stuck">נדחה '+t.weeks+' שבועות</span>');
+  const ar=t.area||'אחר';
   let links='';
-  if(t.phone){const d=tel(t.phone);links+='<a class="btn" href="tel:+'+d+'">📞</a><a class="btn" target="_blank" href="https://wa.me/'+d+(t.owner?'?text='+encodeURIComponent('היי, רק מזכיר: '+t.title):'')+'">💬</a>'}
-  return '<div class="t '+(t.status==='done'||t.status==='cancelled'?t.status:'')+(late?' late':'')+'" id="t_'+t.id+'"><div class="row"><input type="checkbox" '+(t.status==='done'?'checked':'')+' onchange="setSt(\''+t.id+'\',this.checked?\'done\':\'open\')"><div class="ttl" contenteditable="true" title="לחיצה לעריכת השם" onblur="setTitle(\''+t.id+'\',this.innerText)">'+esc(t.title)+'</div></div>'+
+  if(t.phone){const d=tel(t.phone);links='<span class="lk"><a class="btn" onclick="event.stopPropagation()" href="tel:+'+d+'">📞</a><a class="btn" onclick="event.stopPropagation()" target="_blank" href="https://wa.me/'+d+(t.owner?'?text='+encodeURIComponent('היי, רק מזכיר: '+t.title):'')+'">💬</a></span>'}
+  const tmTxt=VIEW==='area'&&t.due?fmt(t.due)+(t.time?' '+esc(t.time):''):esc(t.time||'');
+  const tm=tmTxt?'<span class="ctm">'+tmTxt+'</span>':'<span class="ctm no">––</span>';
+  const open=EXP[t.id]?' open':'';
+  const note=String(t.note||'').trim();
+  return '<div class="t '+(t.status==='done'||t.status==='cancelled'?t.status:'')+(late?' late':'')+open+'" style="--ac:'+areaColor(ar)+'" id="t_'+t.id+'"><div class="row"><input type="checkbox" '+(t.status==='done'?'checked':'')+' onchange="setSt(\''+t.id+'\',this.checked?\'done\':\'open\')">'+tm+'<div class="ttl" contenteditable="true" title="לחיצה לעריכת השם" onblur="setTitle(\''+t.id+'\',this.innerText)">'+esc(t.title)+'</div><button class="chev" aria-label="פתח/סגור" onclick="tog(\''+t.id+'\')">▾</button></div>'+
+   '<div class="cs" onclick="tog(\''+t.id+'\')"><span class="chip">'+esc(ar)+'</span>'+m.join(' · ')+links+'</div>'+
+   (note?'<div class="np" onclick="tog(\''+t.id+'\')">📝 '+esc(note.split('\n')[0])+'</div>':'')+
+   '<div class="more">'+
    '<div class="when">📅 <input type="date" id="d_'+t.id+'" value="'+esc(String(t.due||'').slice(0,10))+'" onchange="setWhen(\''+t.id+'\')"> 🕒 <input type="time" id="h_'+t.id+'" value="'+esc(t.time||'')+'" onchange="setWhen(\''+t.id+'\')"></div>'+
-   (m.length?'<div class="meta">'+m.join(' · ')+'</div>':'')+
-   '<div class="ctl"><select onchange="setSt(\''+t.id+'\',this.value)">'+opts+'</select>'+'<select onchange="setArea(\''+t.id+'\',this.value)">'+AREAS.map(a=>'<option'+(a===(t.area||'אחר')?' selected':'')+'>'+esc(a)+'</option>').join('')+'</select>'+links+'<span class="saved" id="s_'+t.id+'"></span></div>'+
-   '<div class="ctl" style="display:block"><textarea placeholder="הערה…" oninput="grow(this)" onchange="setNote(\''+t.id+'\',this.value)">'+esc(t.note)+'</textarea></div></div>';
+   '<div class="ctl"><select onchange="setSt(\''+t.id+'\',this.value)">'+opts+'</select>'+'<select onchange="setArea(\''+t.id+'\',this.value)">'+AREAS.map(a=>'<option'+(a===ar?' selected':'')+'>'+esc(a)+'</option>').join('')+'</select><span class="saved" id="s_'+t.id+'"></span></div>'+
+   '<div class="ctl" style="display:block"><textarea placeholder="הערה…" oninput="grow(this)" onchange="setNote(\''+t.id+'\',this.value)">'+esc(t.note)+'</textarea></div></div></div>';
 }
 function grow(el){el.style.height='auto';el.style.height=Math.max(el.scrollHeight+2,84)+'px'}
 function save(id,st,note,area,title){const s=document.getElementById('s_'+id);if(s)s.textContent='שומר…';call({a:'update',id:id,status:st,note:note||'',area:area||'',title:title||''}).then(()=>{const s2=document.getElementById('s_'+id);if(s2)s2.textContent='✓ נשמר'}).catch(e=>{const s2=document.getElementById('s_'+id);if(s2)s2.textContent='שגיאה'})}
