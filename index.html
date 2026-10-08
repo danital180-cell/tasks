@@ -152,7 +152,6 @@ function card(t){
   if(t.contact)m.push('👤 '+esc(t.contact));
   const late=isLate(t);
   if(late)m.push('<span class="late-tag">⚠ באיחור</span>');
-  if(t.source&&t.source!=='daniel'&&t.source!=='page')m.push('נוסף ע"י הבוט');
   if(t.weeks>=2&&t.status!=='done')m.push('<span class="stuck">נדחה '+t.weeks+' שבועות</span>');
   let links='';
   if(t.phone){const d=tel(t.phone);links+='<a class="btn" href="tel:+'+d+'">📞</a><a class="btn" target="_blank" href="https://wa.me/'+d+(t.owner?'?text='+encodeURIComponent('היי, רק מזכיר: '+t.title):'')+'">💬</a>'}
